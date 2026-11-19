@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="zh-CN" data-register="blueprint">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LangChain 与 LangGraph · 学习文档</title>
+<style>
+:root{
+  --bg:#0e1118;
+  --surface:#1b2133;
+  --surface-2:#2b3248;
+  --text:#e7ebf8;
+  --text-dim:#9aa5c2;
+  --border:rgba(255,255,255,.14);
+  --border-bright:#7e8cb8;
+  --accent:#7aa2ff;
+  --accent-dim:rgba(122,162,255,.18);
+  --accent-ink:#0a0e1a;
+  --node-a:#7aa2ff;
+  --node-b:#8bd88c;
+  --node-c:#c39bff;
+  --ok:#8bd88c;
+  --warn:#ffb26b;
+  --risk:#ff8a9a;
+  --info:#7aa2ff;
+  --code-bg:#12161f;
+  --code-ink:#dde3f4;
+  --code-muted:#7e8cb8;
+  --font-body:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --font-mono:"JetBrains Mono","Fira Code",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --grid:rgba(122,162,255,.06);
+  --s-1:4px;--s-2:8px;--s-3:12px;--s-4:16px;--s-5:24px;--s-6:32px;--s-8:64px;
+  --r-1:4px;--r-2:8px;
+  --fast:.12s;--med:.2s;--slow:.4s;--ease:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
+body{
+  margin:0;font-family:var(--font-body);color:var(--text);background:var(--bg);
+  line-height:1.7;font-size:16px;
+  background-image:
+    linear-gradient(var(--grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2px}
+a:hover{color:#a8c4ff}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* 顶部进度条 */
+.topbar{position:sticky;top:0;z-index:60;background:rgba(14,17,24,.88);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.topbar-inner{max-width:1180px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:12px}
+.logo{font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--text);letter-spacing:.01em}
+.logo em{font-style:normal;color:var(--accent)}
+.topbar .crumb{font-size:12.5px;color:var(--text-dim);font-family:var(--font-mono)}
+.topbar .spacer{flex:1}
+.topbar .pos{font-family:var(--font-mono);font-size:12.5px;color:var(--text-dim)}
+.topbar a.top{font-size:12.5px;color:var(--text-dim);font-family:var(--font-mono)}
+.topbar a.top:hover{color:var(--accent)}
+
+.layout{max-width:1180px;margin:0 auto;padding:0 20px;display:grid;grid-template-columns:236px minmax(0,1fr);gap:44px;align-items:start}
+
+/* 侧栏目录 */
+.sidebar{position:sticky;top:58px;padding:24px 0 48px;max-height:calc(100vh - 70px);overflow:auto}
+.sidebar .label{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--text-dim);margin:0 0 12px;text-transform:uppercase}
+.toc{list-style:none;margin:0;padding:0}
+.toc li{margin:0}
+.toc a{display:flex;align-items:baseline;gap:8px;padding:5px 10px;font-size:13.5px;color:var(--text-dim);text-decoration:none;border-left:1px solid var(--border);margin-left:0}
+.toc a .n{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);min-width:16px}
+.toc a:hover{color:var(--text)}
+.toc a.active{color:var(--text);border-left-color:var(--accent);background:var(--accent-dim)}
+.toc a.active .n{color:var(--accent)}
+
+main{min-width:0;padding:8px 0 96px}
+
+/* 首屏：figure-first */
+.hero{padding:40px 0 20px}
+.hero .fig{margin:0 0 20px}
+.hero .claim{max-width:640px;margin:0 0 8px}
+.hero h1{font-size:clamp(26px,4vw,38px);line-height:1.2;margin:0 0 10px;font-weight:700;letter-spacing:-.01em}
+.hero .one{font-size:17px;color:var(--text-dim);margin:0;max-width:640px}
+.hero .meta{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);margin-top:14px}
+
+/* 章节 */
+section{padding:48px 0 16px;border-top:1px solid var(--border)}
+section:first-of-type{border-top:none}
+.sec-label{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--accent);text-transform:uppercase;margin:0 0 6px}
+h2{font-size:23px;font-weight:700;margin:0 0 14px;line-height:1.3;scroll-margin-top:70px;letter-spacing:-.01em}
+h2 .t{color:var(--text-dim);font-weight:400}
+h3{font-size:17px;font-weight:650;margin:30px 0 10px;scroll-margin-top:70px;line-height:1.4}
+h4{font-size:15px;font-weight:650;margin:22px 0 8px}
+p{margin:0 0 14px;max-width:68ch}
+p code,li code,td code{font-family:var(--font-mono);font-size:.88em;background:var(--surface);padding:1px 6px;border-radius:3px;border:1px solid var(--border);color:#a8c4ff}
+ul,ol{margin:0 0 14px;padding-left:22px;max-width:68ch}
+li{margin:4px 0}
+strong{font-weight:650}
+.caps{font-family:var(--font-mono);font-size:.82em;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+
+/* 术语联动 */
+.term{color:var(--accent);border-bottom:1px dashed var(--border-bright);cursor:help;text-decoration:none;transition:background var(--fast)}
+.term:hover{background:var(--accent-dim)}
+.ref-on{background:var(--accent-dim);outline:1px solid var(--accent);border-radius:2px}
+
+/* 图 */
+figure{margin:24px 0}
+figure .panel{
+  border:1px solid var(--border);border-radius:var(--r-2);background:var(--surface);
+  padding:var(--s-4);overflow-x:auto;
+}
+figure svg{display:block;width:100%;height:auto;min-width:0}
+figcaption{font-size:14px;color:var(--text);margin-top:10px;max-width:68ch}
+figcaption .claim{color:var(--text-dim)}
+figcaption::before{content:"▲ ";color:var(--accent);font-size:11px}
+
+/* SVG 图纸元素 */
+svg text{font-family:var(--font-mono)}
+svg .tag{font-size:13px;fill:var(--accent);letter-spacing:.08em}
+svg .lbl{font-size:15px;fill:var(--text);font-weight:600}
+svg .dim{font-size:13px;fill:var(--text-dim)}
+svg .tiny{font-size:11px;fill:var(--text-dim)}
+svg .bnd{fill:none;stroke:var(--border-bright);stroke-width:1.6;stroke-dasharray:6 5}
+svg .node{fill:var(--surface-2);stroke:var(--border-bright);stroke-width:1.6}
+svg .node.acc{stroke:var(--accent);stroke-width:2.4}
+svg .node.good{stroke:var(--ok);stroke-width:1.8}
+svg .node.warn{stroke:var(--warn);stroke-width:1.8;stroke-dasharray:5 4}
+svg .edge{fill:none;stroke:var(--text-dim);stroke-width:1.6}
+svg .edge.acc{stroke:var(--accent);stroke-width:2.4}
+svg .edge.good{stroke:var(--ok);stroke-width:1.8}
+svg .edgev{font-size:12px;fill:var(--text-dim)}
+svg .edgev.acc{fill:var(--accent)}
+svg .circle{fill:var(--surface-2);stroke:var(--text-dim);stroke-width:1.6}
+svg .circle.acc{stroke:var(--accent);stroke-width:1.8}
+svg .callout circle{fill:var(--accent);stroke:none}
+svg .callout text{fill:var(--accent-ink);font-size:11px;font-weight:700}
+svg .dimline{stroke:var(--text-dim);stroke-width:1}
+svg .dimline.acc{stroke:var(--accent)}
+svg .dimval{font-size:12px;fill:var(--accent)}
+[data-ref]{transition:fill var(--fast),stroke var(--fast),background var(--fast),opacity var(--fast)}
+
+/* 表格 */
+.table-wrap{overflow-x:auto;margin:20px 0;border:1px solid var(--border);border-radius:var(--r-2);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:540px}
+caption{caption-side:top;text-align:left;font-size:12.5px;color:var(--text-dim);padding:12px 16px 4px;font-family:var(--font-mono)}
+th,td{padding:10px 16px;text-align:left;vertical-align:top;border-bottom:1px solid var(--border)}
+th{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);font-weight:600;white-space:nowrap;background:rgba(255,255,255,.02)}
+tr:last-child td{border-bottom:none}
+td .mono{font-family:var(--font-mono);font-size:.88em;color:var(--accent)}
+.num{font-variant-numeric:tabular-nums}
+
+/* 状态 chip */
+.chip{display:inline-block;font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;padding:1px 8px;border-radius:var(--r-1);border:1px solid;white-space:nowrap}
+.chip.py{color:var(--node-a);border-color:rgba(122,162,247,.4);background:rgba(122,162,247,.08)}
+.chip.js{color:var(--node-c);border-color:rgba(187,154,247,.4);background:rgba(187,154,247,.08)}
+.chip.ok{color:var(--ok);border-color:rgba(158,206,106,.4);background:rgba(158,206,106,.08)}
+.chip.warn{color:var(--warn);border-color:rgba(255,158,100,.4);background:rgba(255,158,100,.08)}
+
+/* 代码块 */
+.codeblock{margin:16px 0;border-radius:var(--r-2);overflow:hidden;border:1px solid var(--border);background:var(--code-bg)}
+.codehead{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border)}
+.codehead .lang{font-family:var(--font-mono);font-size:11px;color:var(--code-muted);letter-spacing:.06em;text-transform:uppercase}
+.copybtn{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);background:none;border:1px solid var(--border-bright);padding:2px 10px;border-radius:var(--r-1);cursor:pointer}
+.copybtn:hover{color:var(--text);border-color:var(--accent)}
+.copybtn.copied{color:var(--ok);border-color:var(--ok)}
+.codeblock pre{margin:0;padding:14px 16px;overflow-x:auto}
+.codeblock code{font-family:var(--font-mono);font-size:13px;line-height:1.65;color:var(--code-ink);white-space:pre;display:block}
+.codeblock .cm{color:var(--code-muted)}
+
+/* 语法高亮 token（Python 规则） */
+.tok-kw{color:#c39bff}
+.tok-str{color:#8bd88c}
+.tok-com{color:#6b7590;font-style:italic}
+.tok-num{color:#ffb26b}
+.tok-fn{color:#7aa2ff}
+.tok-dec{color:#ffd27a}
+.tok-bif{color:#7dd3fc}
+.tok-const{color:#ff8a9a}
+
+/* 提示框 */
+.callout{margin:18px 0;padding:14px 16px;border-radius:var(--r-2);font-size:14px;background:var(--surface);border:1px solid var(--border)}
+.callout.note{border-color:rgba(122,162,247,.35)}
+.callout.warn{border-color:rgba(255,158,100,.4)}
+.callout p{margin:0 0 6px}
+.callout p:last-child{margin:0}
+.callout .tag{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;margin-right:6px}
+.callout.note .tag{color:var(--info)}
+.callout.warn .tag{color:var(--warn)}
+
+/* 时间线 */
+.timeline{margin:20px 0;display:grid;gap:0;position:relative}
+.timeline::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--border-bright)}
+.tl-item{position:relative;padding:0 0 16px 28px}
+.tl-item::before{content:"";position:absolute;left:0;top:7px;width:11px;height:11px;border-radius:50%;background:var(--bg);border:2px solid var(--text-dim)}
+.tl-item:last-child::before{border-color:var(--accent);background:var(--accent)}
+.tl-item .year{font-family:var(--font-mono);font-size:13px;color:var(--accent);font-weight:600}
+.tl-item .desc{margin-top:2px;color:var(--text);font-size:14.5px}
+
+/* 参考列表 */
+.ref-list{margin:0;padding:0;list-style:none}
+.ref-list li{padding:7px 0;border-bottom:1px solid var(--border);font-size:14.5px}
+.ref-list li:last-child{border-bottom:none}
+.ref-list .cat{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-top:18px}
+
+footer{margin-top:56px;padding:20px 0;border-top:1px solid var(--border);color:var(--text-dim);font-size:13px}
+
+/* 导读 */
+.guide{padding:36px 0 24px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.guide>p{max-width:68ch}
+.guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:20px 0 8px}
+.guide-card{display:flex;flex-direction:column;gap:3px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-2);text-decoration:none;color:var(--text);transition:border-color var(--fast),background var(--fast)}
+.guide-card:hover{border-color:var(--accent);background:var(--surface-2)}
+.guide-card:hover .g-t{color:var(--accent)}
+.guide-card .g-n{font-family:var(--font-mono);font-size:12px;color:var(--accent);letter-spacing:.06em}
+.guide-card .g-t{font-weight:700;font-size:16px;color:var(--text);transition:color var(--fast)}
+.guide-card .g-d{font-size:13.5px;color:var(--text-dim)}
+
+/* 移动端目录 */
+.mobile-toc{display:none;margin:4px 0 4px;border:1px solid var(--border);border-radius:var(--r-2);background:var(--surface)}
+.mobile-toc>summary{cursor:pointer;list-style:none;padding:12px 16px;font-family:var(--font-mono);font-size:13px;color:var(--text);letter-spacing:.04em;display:flex;align-items:center;gap:8px}
+.mobile-toc>summary::-webkit-details-marker{display:none}
+.mobile-toc>summary::after{content:"▾";margin-left:auto;color:var(--text-dim);transition:transform var(--fast)}
+.mobile-toc[open]>summary::after{transform:rotate(180deg)}
+.mobile-toc .toc{padding:4px 0 10px}
+.mobile-toc .toc a{padding:7px 16px}
+
+@media (max-width:1024px){
+  .layout{grid-template-columns:1fr;gap:0}
+  .sidebar{display:none}
+  .mobile-toc{display:block}
+}
+@media (max-width:640px){
+  .topbar-inner{padding:8px 14px}
+  .topbar .crumb,.topbar .pos{display:none}
+  .layout{padding:0 14px}
+  figure .panel{padding:var(--s-3)}
+  svg{min-width:560px}
+  h1{font-size:26px}
+  .guide-grid{grid-template-columns:1fr}
+}
+@media print{
+  .topbar,.sidebar,.mobile-toc,.copybtn,.sec-label{display:none}
+  .guide-grid{display:none}
+  body{background:#fff;color:#111}
+  :root{--bg:#fff;--surface:#fff;--text:#111;--text-dim:#444;--border:#ccc;--border-bright:#888;--accent:#0b5bd3}
+  .layout{display:block}
+  figure .panel{border:1px solid #ccc}
+  .codeblock{background:#fff;border:1px solid #ccc}
+  .codeblock code{color:#111}
+  .codehead{display:none}
+  section{page-break-inside:auto}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:11px}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <span class="logo">VE<em>·</em>LANGCHAIN</span>
+    <span class="crumb">blueprint · tokyo-night</span>
+    <span class="spacer"></span>
+    <span class="pos">01 / 10</span>
+    <a class="top" href="#top">↑ TOP</a>
+  </div>
+</header>
+
+<div class="layout" id="top">
+  <nav class="sidebar" aria-label="目录">
+    <p class="label">Contents</p>
+    <ul class="toc">
+      <li><a href="#s1"><span class="n">01</span>生态全景</a></li>
+      <li><a href="#s2"><span class="n">02</span>LangChain 入门</a></li>
+      <li><a href="#s3"><span class="n">03</span>核心概念</a></li>
+      <li><a href="#s4"><span class="n">04</span>LangGraph 入门</a></li>
+      <li><a href="#s5"><span class="n">05</span>图的核心概念</a></li>
+      <li><a href="#s6"><span class="n">06</span>关键能力</a></li>
+      <li><a href="#s7"><span class="n">07</span>GitHub 仓库</a></li>
+      <li><a href="#s8"><span class="n">08</span>对比与选型</a></li>
+      <li><a href="#s9"><span class="n">09</span>演进时间线</a></li>
+      <li><a href="#s10"><span class="n">10</span>参考资源</a></li>
+    </ul>
+  </nav>
+
+  <main>
+
+    <!-- 移动端目录 -->
+    <details class="mobile-toc">
+      <summary>目录 · Contents</summary>
+      <ul class="toc">
+        <li><a href="#s1"><span class="n">01</span>生态全景</a></li>
+        <li><a href="#s2"><span class="n">02</span>LangChain 入门</a></li>
+        <li><a href="#s3"><span class="n">03</span>核心概念</a></li>
+        <li><a href="#s4"><span class="n">04</span>LangGraph 入门</a></li>
+        <li><a href="#s5"><span class="n">05</span>图的核心概念</a></li>
+        <li><a href="#s6"><span class="n">06</span>关键能力</a></li>
+        <li><a href="#s7"><span class="n">07</span>GitHub 仓库</a></li>
+        <li><a href="#s8"><span class="n">08</span>对比与选型</a></li>
+        <li><a href="#s9"><span class="n">09</span>演进时间线</a></li>
+        <li><a href="#s10"><span class="n">10</span>参考资源</a></li>
+      </ul>
+    </details>
+
+    <!-- 首屏：figure-first，答案图 + 一句话 -->
+    <div class="hero">
+      <figure class="fig">
+        <div class="panel">
+          <svg viewBox="0 0 800 540" role="img" aria-labelledby="f1t f1d">
+            <title id="f1t">LangChain 生态四产品分层架构</title>
+            <desc id="f1d">Deep Agents 构建于 LangChain 之上，LangChain 构建于 LangGraph 之上，LangSmith 横跨所有层提供可观测、评估与部署。</desc>
+
+            <!-- 层 1：Deep Agents -->
+            <rect class="bnd" x="90" y="44" width="620" height="102" data-ref="deepagents"/>
+            <g class="callout" transform="translate(112,62)"><circle r="11"/><text y="4">1</text></g>
+            <text class="tag" x="134" y="68">DEEP AGENTS</text>
+            <text class="lbl" x="134" y="94">Agent 外壳 · 开箱即用</text>
+            <text class="dim" x="134" y="120">规划 / 子 Agent / 文件系统 / 上下文管理</text>
+
+            <!-- 箭头 builds on -->
+            <path class="edge" d="M400 146 V186"/>
+            <path class="edge" d="M395 180 L400 190 L405 180"/>
+            <text class="edgev" x="414" y="172">builds on</text>
+
+            <!-- 层 2：LangChain -->
+            <rect class="bnd" x="90" y="192" width="620" height="102" data-ref="langchain"/>
+            <g class="callout" transform="translate(112,210)"><circle r="11"/><text y="4">2</text></g>
+            <text class="tag" x="134" y="216">LANGCHAIN · create_agent</text>
+            <text class="lbl" x="134" y="242">Agent 框架 · 最小 Agent 循环</text>
+            <text class="dim" x="134" y="268">模型 / 工具 / 提示词 / 中间件</text>
+
+            <!-- 箭头 builds on -->
+            <path class="edge" d="M400 294 V334"/>
+            <path class="edge" d="M395 328 L400 338 L405 328"/>
+            <text class="edgev" x="414" y="320">builds on</text>
+
+            <!-- 层 3：LangGraph -->
+            <rect class="bnd" x="90" y="340" width="620" height="102" data-ref="langgraph"/>
+            <g class="callout" transform="translate(112,358)"><circle r="11"/><text y="4">3</text></g>
+            <text class="tag" x="134" y="364">LANGGRAPH</text>
+            <text class="lbl" x="134" y="390">编排运行时 · 图 / 状态 / 节点 / 边</text>
+            <text class="dim" x="134" y="416">持久化 / 流式 / 人机交互</text>
+
+            <!-- 层 4：LangSmith 底座 -->
+            <rect class="bnd" x="50" y="474" width="700" height="54" data-ref="langsmith"/>
+            <g class="callout" transform="translate(74,492)"><circle r="11"/><text y="4">4</text></g>
+            <text class="tag" x="96" y="498">LANGSMITH</text>
+            <text class="lbl" x="96" y="516" font-size="13">可观测性 · 评估 · 部署 —— 框架无关，横跨所有层</text>
+          </svg>
+        </div>
+        <figcaption><span class="claim">四个产品构成一个分层矩阵：每层构建于下一层之上，LangSmith 横跨所有层。</span></figcaption>
+      </figure>
+
+      <div class="claim">
+        <h1>LangChain 与 LangGraph</h1>
+        <p class="one"><strong>Agent = Model + Harness</strong> —— 模型在循环里调用工具直到任务完成，harness 负责其余一切：提示词、工具、中间件。</p>
+        <p class="meta">整理自官方文档 docs.langchain.com 与 GitHub 组织 langchain-ai · 2026-11-19</p>
+      </div>
+    </div>
+
+    <!-- 导读 -->
+    <div class="guide" id="guide" aria-label="导读">
+      <p class="sec-label">导读 · Reading Guide</p>
+      <h2>怎么读这份文档 <span class="t">/ 快速定位</span></h2>
+      <p>共 10 节：开篇建立生态全景，随后 LangChain 与 LangGraph 各分「入门」与「核心概念」，最后是选型、时间线与参考资料。按你的目标直接跳转：</p>
+      <div class="guide-grid">
+        <a class="guide-card" href="#s1">
+          <span class="g-n">01</span>
+          <span class="g-t">看懂生态</span>
+          <span class="g-d">四个产品怎么分层，先建立全景</span>
+        </a>
+        <a class="guide-card" href="#s2">
+          <span class="g-n">02 · 04</span>
+          <span class="g-t">上手写 Agent</span>
+          <span class="g-d">LangChain 与 LangGraph 的安装与最小示例</span>
+        </a>
+        <a class="guide-card" href="#s3">
+          <span class="g-n">03 · 05</span>
+          <span class="g-t">搞懂原理</span>
+          <span class="g-d">Agent 循环、状态 / 节点 / 边</span>
+        </a>
+        <a class="guide-card" href="#s8">
+          <span class="g-n">08</span>
+          <span class="g-t">选型决策</span>
+          <span class="g-d">LangChain / LangGraph / Deep Agents 怎么选</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- 01 生态全景 -->
+    <section id="s1">
+      <p class="sec-label">01 · Ecosystem</p>
+      <h2>四个产品，一个分层矩阵 <span class="t">/ 生态全景</span></h2>
+      <p>LangChain 不是单一框架，而是覆盖 AI Agent 全生命周期的产品矩阵。<a class="term" data-ref="langgraph">LangGraph</a> 在底层做编排运行时，<a class="term" data-ref="langchain">LangChain</a>（<code>create_agent</code>）在中间提供最小 Agent 循环，<a class="term" data-ref="deepagents">Deep Agents</a> 在顶层提供开箱即用的外壳，<a class="term" data-ref="langsmith">LangSmith</a> 横跨所有层做可观测、评估与部署。</p>
+      <div class="table-wrap">
+        <table>
+          <caption>四产品职责一览</caption>
+          <thead><tr><th>产品</th><th>定位</th><th>关键作用</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">LangChain</td><td>Agent 框架</td><td>模型、工具、Agent 循环的抽象与集成</td></tr>
+            <tr><td class="mono">LangGraph</td><td>编排运行时</td><td>持久执行、流式、人机交互、持久化</td></tr>
+            <tr><td class="mono">Deep Agents</td><td>Agent 外壳</td><td>内置规划、子 Agent、文件系统、上下文管理</td></tr>
+            <tr><td class="mono">LangSmith</td><td>平台</td><td>追踪、评估、提示词、部署</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout note">
+        <p><span class="tag">Deep Agents</span>适合「开箱即用」跑生产级 Agent；<span class="tag">LangChain</span>适合快速交付 + 中间件定制；<span class="tag">LangGraph</span>适合确定性工作流与 Agent 工作流混合；<span class="tag">LangSmith</span>可追踪任意框架。</p>
+      </div>
+    </section>
+
+    <!-- 02 LangChain 快速入门 -->
+    <section id="s2">
+      <p class="sec-label">02 · Quickstart</p>
+      <h2><code>create_agent</code> 是极简 Agent 外壳 <span class="t">/ LangChain 入门</span></h2>
+      <p>LangChain 用模型、工具、提示词和中间件组合出恰好符合用例的 Agent，支持 OpenAI、Anthropic、Google 等多家提供商。</p>
+
+      <figure>
+        <div class="panel">
+          <svg viewBox="0 0 800 340" role="img" aria-labelledby="f2t f2d">
+            <title id="f2t">Agent 循环机制：Model 与 Tools 在 Harness 内循环</title>
+            <desc id="f2d">Harness 包裹 Model 与 Tools；Model 调用工具，工具返回结果，循环直到任务完成。</desc>
+
+            <rect class="bnd" x="30" y="30" width="470" height="286" data-ref="harness"/>
+            <text class="tag" x="50" y="54">HARNESS</text>
+            <text class="tiny" x="50" y="74">system prompt · tools · middleware</text>
+
+            <rect class="node acc" x="90" y="140" width="170" height="76" data-ref="model"/>
+            <text class="lbl" x="130" y="183">Model</text>
+
+            <rect class="node" x="330" y="140" width="130" height="76" data-ref="tools"/>
+            <text class="lbl" x="362" y="183">Tools</text>
+
+            <path class="edge acc" d="M260 178 H330"/>
+            <path class="edge acc" d="M324 173 L330 178 L324 183"/>
+            <text class="edgev acc" x="270" y="168">calls tool</text>
+
+            <path class="edge" d="M395 216 H215"/>
+            <path class="edge" d="M221 211 L215 216 L221 221"/>
+            <text class="edgev" x="258" y="238">returns result</text>
+
+            <path class="edge" d="M20 178 H90"/>
+            <path class="edge" d="M84 173 L90 178 L84 183"/>
+            <text class="edgev" x="28" y="168">input</text>
+          </svg>
+        </div>
+        <figcaption><span class="claim">Harness 包裹 Model 与 Tools；模型调用工具、工具返回结果，循环直到任务完成。</span></figcaption>
+      </figure>
+
+      <h3>安装</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">bash</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>pip install -U langchain            # 核心（Python 3.10+）
+pip install -U langchain-openai     # OpenAI 集成
+pip install -U langchain-anthropic  # Anthropic 集成</code></pre>
+      </div>
+
+      <h3>第一个 Agent</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">python</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>from langchain.agents import create_agent
+
+def get_weather(city: str) -&gt; str:
+    """Get weather for a given city."""
+    return f"It's always sunny in {city}!"
+
+agent = create_agent(
+    model="openai:gpt-6.1-sol",
+    tools=[get_weather],
+    system_prompt="You are a helpful assistant",
+)
+result = agent.invoke(
+    {"messages": [{"role": "user", "content": "What's the weather in San Francisco?"}]}
+)
+print(result["messages"][-1].content_blocks)</code></pre>
+      </div>
+
+      <p>配置 API key（<code>.env</code> 可用 <code>python-dotenv</code> 的 <code>load_dotenv()</code>）：</p>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">bash</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>export OPENAI_API_KEY="your-api-key"
+export ANTHROPIC_API_KEY="your-api-key"
+export GOOGLE_API_KEY="your-api-key"</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <p><span class="tag">LangChain vs Deep Agent</span>Deep Agent 内置规划（<code>write_todos</code>）、虚拟文件系统（<code>grep</code>/<code>read_file</code>）、子 Agent 派生，能真正回答「文件里有多少行包含 Gatsby」这类需执行代码的问题；普通 LangChain Agent 缺少这些工具时只能返回估算值或 <code>null</code>。</p>
+      </div>
+    </section>
+
+    <!-- 03 LangChain 核心概念 -->
+    <section id="s3">
+      <p class="sec-label">03 · Concepts</p>
+      <h2>Agent 是模型加外壳 <span class="t">/ 核心概念</span></h2>
+      <ul>
+        <li><strong>Agent</strong>：模型在循环中调用工具直到任务完成。</li>
+        <li><strong>Harness</strong>：循环之外的一切——提示词、工具、中间件。职责是「在正确的时间把正确的上下文给模型」。</li>
+      </ul>
+
+      <h3>模型与工具</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">python</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>from langchain.agents import create_agent
+from langchain.chat_models import init_chat_model
+from langchain.tools import tool
+
+model = init_chat_model("openai:gpt-6.1-sol", temperature=0.5, timeout=300)
+
+@tool
+def search(query: str) -&gt; str:
+    """Search for information."""
+    return f"Results for: {query}"
+
+agent = create_agent(model=model, tools=[search])</code></pre>
+      </div>
+      <p>工具的 name、description、参数名会成为模型 prompt 的一部分，所以要写清楚。</p>
+
+      <h3>结构化输出与状态</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">python</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>from pydantic import BaseModel
+from langchain.agents import AgentState, create_agent
+
+class Answer(BaseModel):
+    summary: str
+    confidence: float
+
+class MyState(AgentState):
+    user_id: str
+    call_count: int
+
+agent = create_agent(model="openai:gpt-6.1-sol", tools=[], response_format=Answer, state_schema=MyState)</code></pre>
+      </div>
+
+      <h3>用 thread_id 持久化对话</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">python</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>from langchain_core.utils.uuid import uuid7
+from langgraph.checkpoint.memory import InMemorySaver
+
+agent = create_agent(model="openai:gpt-6.1-sol", tools=[], checkpointer=InMemorySaver())
+config = {"configurable": {"thread_id": str(uuid7())}}
+
+agent.invoke({"messages": [{"role": "user", "content": "weather?"}]}, config=config)
+# 复用同一 thread_id 以保留历史
+agent.invoke({"messages": [{"role": "user", "content": "tomorrow?"}]}, config=config)</code></pre>
+      </div>
+
+      <p><strong>核心优势</strong>：标准模型接口（一行换模型）、高度可配置 harness、构建于 LangGraph 之上、用 LangSmith 调试。</p>
+    </section>
+
+    <!-- 04 LangGraph 快速入门 -->
+    <section id="s4">
+      <p class="sec-label">04 · Quickstart</p>
+      <h2>工作流 = 状态 + 节点 + 边 <span class="t">/ LangGraph 入门</span></h2>
+      <p>LangGraph 是面向<strong>长时间运行、有状态 Agent</strong> 的低级编排框架，把工作流定义为共享状态、节点、边组成的图，可混合确定性步骤与 LLM 驱动步骤。</p>
+
+      <figure>
+        <div class="panel">
+          <svg viewBox="0 0 800 340" role="img" aria-labelledby="f3t f3d">
+            <title id="f3t">计算器 Agent 的状态图：LLM 与工具节点的循环</title>
+            <desc id="f3d">从 START 进入 llm_call，若模型请求工具则进入 tool_node 后回到 llm_call，否则结束。</desc>
+
+            <circle class="circle acc" cx="70" cy="92" r="16"/>
+            <text class="tiny" x="70" y="130" text-anchor="middle">START</text>
+
+            <rect class="node acc" x="170" y="58" width="230" height="68" data-ref="llm"/>
+            <text class="lbl" x="205" y="96">llm_call</text>
+            <text class="tiny" x="205" y="116">模型决定是否调工具</text>
+
+            <rect class="node" x="170" y="236" width="230" height="68" data-ref="toolnode"/>
+            <text class="lbl" x="205" y="274">tool_node</text>
+            <text class="tiny" x="205" y="294">执行工具调用</text>
+
+            <circle class="circle" cx="560" cy="92" r="16"/>
+            <text class="tiny" x="560" y="130" text-anchor="middle">END</text>
+
+            <path class="edge" d="M86 92 H170"/>
+            <path class="edge" d="M164 87 L170 92 L164 97"/>
+
+            <path class="edge" d="M400 92 H544"/>
+            <path class="edge" d="M538 87 L544 92 L538 97"/>
+            <text class="edgev" x="430" y="82">no tool calls</text>
+
+            <path class="edge" d="M285 126 V236"/>
+            <path class="edge" d="M280 230 L285 236 L290 230"/>
+            <text class="edgev" x="297" y="185">has tool_calls?</text>
+
+            <path class="edge" d="M170 270 H120 V92 H154"/>
+            <path class="edge" d="M160 87 L154 92 L160 97"/>
+            <text class="edgev" x="78" y="180">returns result</text>
+          </svg>
+        </div>
+        <figcaption><span class="claim">从 START 进入 llm_call；有工具调用则走 tool_node 再回到 llm_call，否则结束。</span></figcaption>
+      </figure>
+
+      <h3>安装与最小图</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">bash</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>pip install -U langgraph</code></pre>
+      </div>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">python</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>from langgraph.graph import StateGraph, MessagesState, START, END
+
+def mock_llm(state: MessagesState):
+    return {"messages": [{"role": "ai", "content": "hello world"}]}
+
+graph = StateGraph(MessagesState)
+graph.add_node(mock_llm)
+graph.add_edge(START, "mock_llm")
+graph.add_edge("mock_llm", END)
+graph = graph.compile()
+graph.invoke({"messages": [{"role": "user", "content": "hi!"}]})</code></pre>
+      </div>
+
+      <h3>完整计算器 Agent（8 步）</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">python</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>from langchain.tools import tool
+from langchain.chat_models import init_chat_model
+
+model = init_chat_model("claude-sonnet-4-6", temperature=0)
+
+@tool
+def multiply(a: int, b: int) -&gt; int:
+    """Multiply `a` and `b`."""; return a * b
+
+@tool
+def add(a: int, b: int) -&gt; int:
+    """Adds `a` and `b`."""; return a + b
+
+@tool
+def divide(a: int, b: int) -&gt; float:
+    """Divide `a` and `b`."""; return a / b
+
+tools = [add, multiply, divide]
+tools_by_name = {t.name: t for t in tools}
+model_with_tools = model.bind_tools(tools)
+
+# 状态：operator.add 追加消息而非替换
+from langchain.messages import AnyMessage
+from typing_extensions import TypedDict, Annotated
+import operator
+
+class MessagesState(TypedDict):
+    messages: Annotated[list[AnyMessage], operator.add]
+    llm_calls: int
+
+from langchain.messages import SystemMessage, ToolMessage
+
+def llm_call(state: dict):
+    return {
+        "messages": [model_with_tools.invoke(
+            [SystemMessage(content="You are a helpful assistant tasked with performing arithmetic on a set of inputs.")]
+            + state["messages"]
+        )],
+        "llm_calls": state.get('llm_calls', 0) + 1
+    }
+
+def tool_node(state: dict):
+    result = []
+    for tc in state["messages"][-1].tool_calls:
+        obs = tools_by_name[tc["name"]].invoke(tc["args"])
+        result.append(ToolMessage(content=obs, tool_call_id=tc["id"]))
+    return {"messages": result}
+
+from typing import Literal
+from langgraph.graph import StateGraph, START, END
+
+def should_continue(state: MessagesState) -&gt; Literal["tool_node", END]:
+    return "tool_node" if state["messages"][-1].tool_calls else END
+
+b = StateGraph(MessagesState)
+b.add_node("llm_call", llm_call)
+b.add_node("tool_node", tool_node)
+b.add_edge(START, "llm_call")
+b.add_conditional_edges("llm_call", should_continue, ["tool_node", END])
+b.add_edge("tool_node", "llm_call")
+agent = b.compile()
+
+from langchain.messages import HumanMessage
+messages = agent.invoke({"messages": [HumanMessage(content="Add 3 and 4.")]})
+for m in messages["messages"]:
+    m.pretty_print()</code></pre>
+      </div>
+    </section>
+
+    <!-- 05 LangGraph 核心概念 -->
+    <section id="s5">
+      <p class="sec-label">05 · Graph API</p>
+      <h2>节点做工作，边决定下一步 <span class="t">/ 图的核心概念</span></h2>
+      <p><a class="term" data-ref="state">State</a> 是共享快照，<a class="term" data-ref="nodes">Nodes</a> 是读取状态并返回更新的函数，<a class="term" data-ref="edges">Edges</a> 是决定下一个节点的转换。<code>Send</code> 做 fan-out，<code>Command</code> 在更新状态的同时路由。</p>
+
+      <h3>状态与 Reducer</h3>
+      <p>状态存于 <strong>channels</strong>。大多数 channel 用 last-write-wins，带 reducer 的用组合方式合并。</p>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">python</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>import operator
+from typing import Annotated
+from typing_extensions import TypedDict
+
+class State(TypedDict):
+    foo: int                                # 覆盖
+    bar: Annotated[list[str], operator.add] # 追加合并
+
+# 消息状态：用 add_messages 而非 operator.add
+from langchain.messages import AnyMessage
+from langgraph.graph.message import add_messages
+
+class GraphState(TypedDict):
+    messages: Annotated[list[AnyMessage], add_messages]</code></pre>
+      </div>
+      <div class="callout warn"><p><span class="tag">add_messages</span>能在人机交互编辑时按 ID 就地更新已有消息，<code>operator.add</code> 只能追加。</p></div>
+
+      <h3>节点与边</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">python</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>def node_a(state: State):
+    return {"text": state["text"] + "a"}
+
+graph = (
+    StateGraph(State)
+    .add_node("node_a", node_a)
+    .add_edge(START, "node_a")
+    .add_edge("node_a", END)
+    .compile()
+)
+graph.invoke({"text": ""})  # {'text': 'a'}</code></pre>
+      </div>
+      <p>边分普通边与条件边；入口用 <code>START</code> 连接。每个节点要么用静态边，要么用动态路由（条件边/<code>Command</code>），不要混用。</p>
+
+      <h3>Send（扇出）与 Command（状态+路由）</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">python</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>from langgraph.types import Send, Command
+from typing import Literal
+
+# 每个 item 运行一次同一节点，item 数量运行时才知道
+def fan_out(state):
+    return [Send("generate_joke", {"subject": s}) for s in state["subjects"]]
+
+def my_node(state) -&gt; Command[Literal["next_node"]]:
+    return Command(update={"foo": "bar"}, goto="next_node")</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <p><span class="tag">重执行与幂等</span>checkpointer 在 super-step 边界存 checkpoint，节点内部不存。中断或重试后节点从头重跑，要用幂等键、upsert、先读后写检查。</p>
+      </div>
+    </section>
+
+    <!-- 06 LangGraph 关键能力 -->
+    <section id="s6">
+      <p class="sec-label">06 · Capabilities</p>
+      <h2>持久化、中断、流式是核心能力 <span class="t">/ 关键能力</span></h2>
+
+      <figure>
+        <div class="panel">
+          <svg viewBox="0 0 800 240" role="img" aria-labelledby="f4t f4d">
+            <title id="f4t">中断：在特定点暂停，等待人工输入后恢复</title>
+            <desc id="f4d">运行节点到 interrupt 时暂停，等待人工输入，再用 Command(resume) 恢复继续。</desc>
+
+            <rect class="node" x="30" y="50" width="130" height="64"/>
+            <text class="lbl" x="60" y="86">run node</text>
+
+            <rect class="node warn" x="230" y="50" width="180" height="64" data-ref="interrupt"/>
+            <text class="lbl" x="262" y="80">interrupt()</text>
+            <text class="tiny" x="262" y="98">暂停，等待人工</text>
+
+            <rect class="bnd" x="500" y="40" width="200" height="88" data-ref="human"/>
+            <text class="tag" x="518" y="64">HUMAN</text>
+            <text class="dim" x="518" y="88">人工输入</text>
+
+            <rect class="node good" x="230" y="170" width="180" height="50"/>
+            <text class="lbl" x="262" y="200">continue</text>
+
+            <path class="edge" d="M160 82 H230"/>
+            <path class="edge" d="M224 77 L230 82 L224 87"/>
+            <text class="edgev" x="172" y="72">pauses</text>
+
+            <path class="edge" d="M410 82 H500"/>
+            <path class="edge" d="M494 77 L500 82 L494 87"/>
+            <text class="edgev" x="430" y="72">waits</text>
+
+            <path class="edge" d="M600 128 V154 H320 V170"/>
+            <path class="edge" d="M315 165 L320 170 L325 165"/>
+            <text class="edgev" x="430" y="150">resume</text>
+          </svg>
+        </div>
+        <figcaption><span class="claim">运行到 interrupt 暂停，等待人工输入，再用 Command(resume) 恢复。</span></figcaption>
+      </figure>
+
+      <h3>持久化（短期 + 长期记忆）</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">python</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>from langgraph.checkpoint.memory import InMemorySaver
+
+graph = builder.compile(checkpointer=InMemorySaver())
+config = {"configurable": {"thread_id": "thread-1"}}
+graph.invoke({"messages": [...]}, config=config)</code></pre>
+      </div>
+      <p>checkpointers（<code>PostgresSaver</code> / <code>SqliteSaver</code> / <code>MemorySaver</code>）做短期线程作用域记忆；stores 做跨线程长期记忆。</p>
+
+      <h3>中断（Human-in-the-loop）</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">python</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>from langgraph.types import interrupt, Command
+
+def approval_node(state):
+    approved = interrupt("Do you approve this action?")
+    return {"approved": approved}
+
+# 中断后恢复
+graph.stream_events(Command(resume=True), config=config, version="v3")</code></pre>
+      </div>
+      <div class="callout warn">
+        <p><span class="tag">中断规则</span>① 不要用 try/except 包裹 <code>interrupt</code>；② 不要重排节点内 <code>interrupt</code> 顺序；③ 不要返回复杂值；④ 中断前副作用必须幂等。</p>
+      </div>
+
+      <h3>流式（Streaming）</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">python</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>for chunk in graph.stream({"topic": "ice cream"}, stream_mode=["updates", "custom"], version="v2"):
+    if chunk["type"] == "updates":
+        for node_name, state in chunk["data"].items():
+            print(f"Node {node_name} updated: {state}")</code></pre>
+      </div>
+      <p>Stream modes：<code>updates</code>、<code>values</code>、<code>messages</code>、<code>custom</code>、<code>checkpoints</code>、<code>tasks</code>、<code>debug</code>；新应用推荐 event streaming（<code>stream_events(version="v3")</code>）。</p>
+    </section>
+
+    <!-- 07 GitHub 仓库 -->
+    <section id="s7">
+      <p class="sec-label">07 · Repositories</p>
+      <h2>一个组织，十个核心仓库 <span class="t">/ GitHub 生态</span></h2>
+      <div class="table-wrap">
+        <table>
+          <caption>langchain-ai 组织核心仓库</caption>
+          <thead><tr><th>仓库</th><th>语言</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">langchain</td><td><span class="chip py">Python</span></td><td>核心框架（约 134k stars），模型、工具、Agent 循环</td></tr>
+            <tr><td class="mono">langchainjs</td><td><span class="chip js">JS/TS</span></td><td>LangChain 的 JavaScript 版本</td></tr>
+            <tr><td class="mono">langgraph</td><td><span class="chip py">Python</span></td><td>低级编排框架，构建有状态多角色 Agent</td></tr>
+            <tr><td class="mono">langgraphjs</td><td><span class="chip js">JS/TS</span></td><td>LangGraph 的 JavaScript 版本</td></tr>
+            <tr><td class="mono">deepagents</td><td><span class="chip py">Python</span></td><td>「batteries-included」Agent 外壳</td></tr>
+            <tr><td class="mono">deepagentsjs</td><td><span class="chip js">JS/TS</span></td><td>Deep Agents 的 JavaScript 版本</td></tr>
+            <tr><td class="mono">langsmith-sdk</td><td>—</td><td>LangSmith 平台 SDK</td></tr>
+            <tr><td class="mono">docs</td><td>—</td><td>官方文档仓库</td></tr>
+            <tr><td class="mono">open-swe</td><td>—</td><td>开源异步编码 Agent 框架</td></tr>
+            <tr><td class="mono">langchain-skills</td><td>—</td><td>提升 Agent 在 LangChain 生态任务上的表现</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Deep Agents CLI</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="lang">bash</span><button class="copybtn" type="button">复制</button></div>
+        <pre><code>uv tool install deepagents-cli
+deepagents                        # 在项目目录启动
+deepagents list                   # 管理多个 Agent
+deepagents --agent backend-dev
+deepagents reset backend-dev</code></pre>
+      </div>
+      <p>特点：读写文件、带审批执行 shell 命令、联网搜索、跨会话记忆（<code>~/.deepagents/AGENT_NAME/memories/</code>）、可视化 todo 规划。</p>
+    </section>
+
+    <!-- 08 对比与选型 -->
+    <section id="s8">
+      <p class="sec-label">08 · Selection</p>
+      <h2>按任务复杂度选框架 <span class="t">/ 对比与选型</span></h2>
+      <div class="table-wrap">
+        <table>
+          <caption>三者定位差异</caption>
+          <thead><tr><th>产品</th><th>层级</th><th>最佳场景</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">LangGraph</td><td>运行时</td><td>需精细控制、持久化、人机交互的生产系统</td></tr>
+            <tr><td class="mono">LangChain</td><td>框架</td><td>从零构建 prompt/tools；快速交付 + 中间件定制</td></tr>
+            <tr><td class="mono">Deep Agents</td><td>外壳</td><td>长期自主 Agent，内置规划、文件系统、子 Agent</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout note">
+        <p>快速原型/换模型 → <strong>LangChain</strong>；精确控制状态流程 → <strong>LangGraph</strong>；长期复杂任务 → <strong>Deep Agents</strong>；可观测/评估/部署 → 配套 <strong>LangSmith</strong>（框架无关）。</p>
+      </div>
+    </section>
+
+    <!-- 09 时间线 -->
+    <section id="s9">
+      <p class="sec-label">09 · Timeline</p>
+      <h2>从 Chains 到 Agent 抽象 <span class="t">/ 演进时间线</span></h2>
+      <div class="timeline">
+        <div class="tl-item"><div class="year">2022-10-24</div><div class="desc">LangChain 作为 Python 包发布（早于 ChatGPT 一个月），含 LLM 抽象 + Chains。</div></div>
+        <div class="tl-item"><div class="year">2023-02</div><div class="desc">LangChain Inc. 成立；目标「让智能 Agent 无处不在」。</div></div>
+        <div class="tl-item"><div class="year">2023-03</div><div class="desc">OpenAI 发布 function calling，LangChain 改用此方式做工具调用。</div></div>
+        <div class="tl-item"><div class="year">2023-06</div><div class="desc">LangSmith 发布（闭源平台，可观测 + 评估）。</div></div>
+        <div class="tl-item"><div class="year">2024-01</div><div class="desc">LangChain 发布 0.1.0（首个非 0.0.x 版本，聚焦稳定性）。</div></div>
+        <div class="tl-item"><div class="year">2024-02</div><div class="desc">LangGraph 作为开源库发布，补齐低级编排层。</div></div>
+        <div class="tl-item"><div class="year">2024-06</div><div class="desc">集成超 700 个，拆分为独立 provider 包或 langchain-community。</div></div>
+        <div class="tl-item"><div class="year">2025-04</div><div class="desc">更新 message 格式以支持多模态输入。</div></div>
+        <div class="tl-item"><div class="year">2025-10-20</div><div class="desc">LangChain 发布 1.0，chains/agents 重构为单一 Agent 抽象（基于 LangGraph）。</div></div>
+        <div class="tl-item"><div class="year">2026-03-15</div><div class="desc">Deep Agents 作为开源 Agent 外壳发布（v0.5.3）。</div></div>
+      </div>
+    </section>
+
+    <!-- 10 参考资源 -->
+    <section id="s10">
+      <p class="sec-label">10 · References</p>
+      <h2>官方文档与仓库 <span class="t">/ 参考资源</span></h2>
+      <ul class="ref-list">
+        <li><span class="cat">Docs</span></li>
+        <li><a href="https://docs.langchain.com/oss/python/langchain/overview" target="_blank" rel="noopener noreferrer">LangChain 概览</a> · <a href="https://docs.langchain.com/oss/python/langchain/install" target="_blank" rel="noopener noreferrer">安装</a> · <a href="https://docs.langchain.com/oss/python/langchain/quickstart" target="_blank" rel="noopener noreferrer">Quickstart</a> · <a href="https://docs.langchain.com/oss/python/langchain/agents" target="_blank" rel="noopener noreferrer">Agents</a> · <a href="https://docs.langchain.com/oss/python/langchain/philosophy" target="_blank" rel="noopener noreferrer">理念与历史</a></li>
+        <li><a href="https://docs.langchain.com/oss/python/langgraph/overview" target="_blank" rel="noopener noreferrer">LangGraph 概览</a> · <a href="https://docs.langchain.com/oss/python/langgraph/quickstart" target="_blank" rel="noopener noreferrer">Quickstart</a> · <a href="https://docs.langchain.com/oss/python/langgraph/graph-api" target="_blank" rel="noopener noreferrer">Graph API</a> · <a href="https://docs.langchain.com/oss/python/langgraph/persistence" target="_blank" rel="noopener noreferrer">持久化</a> · <a href="https://docs.langchain.com/oss/python/langgraph/interrupts" target="_blank" rel="noopener noreferrer">中断</a> · <a href="https://docs.langchain.com/oss/python/langgraph/streaming" target="_blank" rel="noopener noreferrer">流式</a></li>
+        <li><span class="cat">GitHub</span></li>
+        <li><a href="https://github.com/langchain-ai" target="_blank" rel="noopener noreferrer">langchain-ai 组织</a> · <a href="https://github.com/langchain-ai/langchain" target="_blank" rel="noopener noreferrer">langchain</a> · <a href="https://github.com/langchain-ai/langgraph" target="_blank" rel="noopener noreferrer">langgraph</a> · <a href="https://github.com/langchain-ai/deepagents" target="_blank" rel="noopener noreferrer">deepagents</a></li>
+        <li><span class="cat">Other</span></li>
+        <li><a href="https://www.langchain.com/resources/ai-agent-frameworks" target="_blank" rel="noopener noreferrer">AI Agent 框架对比</a></li>
+      </ul>
+    </section>
+
+    <footer>
+      <p>本文档基于 LangChain 官方文档与公开资料整理，代码示例为官方文档原样呈现（含未来版本号的模型名，实际使用请以官方最新文档为准）。视觉采用 <code>visual-explainer</code> 的 Blueprint 语域与 Tokyo Night 主题。</p>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  try {
+    // 语法高亮（Python / bash 规则）
+    function escapeHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function highlight(code, lang) {
+      var esc = escapeHtml(code);
+      if (lang !== 'python') {
+        return esc
+          .replace(/("[^"\n]*")/g, '<span class="tok-str">$1</span>')
+          .replace(/(#[^\n]*)/g, '<span class="tok-com">$1</span>');
+      }
+      var re = /("""[\s\S]*?"""|"[^"\n]*"|'[^'\n]*')|(#[^\n]*)|(@\w+)|(\b(?:def|class)\s+)(\w+)|\b(None|True|False)\b|\b(print|len|range|type|isinstance|getattr|setattr|hasattr|super|min|max|sum|abs|round|int|float|str|list|dict|tuple|set|enumerate|zip|map|filter|sorted|reversed|any|all|open|input|repr|format|next|iter|id|callable|vars|dir)(?=\()|\b(def|return|from|import|for|if|else|elif|class|while|with|as|in|not|and|or|lambda|try|except|finally|raise|pass|yield|global|is|assert|del|await|async|nonlocal|break|continue)\b|(\b\d+(?:\.\d+)?\b)/g;
+      return esc.replace(re, function (m, str, com, dec, df, name, cons, bif, kw, num) {
+        if (str) return '<span class="tok-str">' + str + '</span>';
+        if (com) return '<span class="tok-com">' + com + '</span>';
+        if (dec) return '<span class="tok-dec">' + dec + '</span>';
+        if (df) return '<span class="tok-kw">' + df.trim() + '</span> <span class="tok-fn">' + name + '</span>';
+        if (cons) return '<span class="tok-const">' + cons + '</span>';
+        if (bif) return '<span class="tok-bif">' + bif + '</span>';
+        if (kw) return '<span class="tok-kw">' + kw + '</span>';
+        if (num) return '<span class="tok-num">' + num + '</span>';
+        return m;
+      });
+    }
+    document.querySelectorAll('.codeblock').forEach(function (block) {
+      var langEl = block.querySelector('.lang');
+      var lang = langEl ? langEl.textContent.trim().toLowerCase() : 'python';
+      var code = block.querySelector('code');
+      if (code) { code.innerHTML = highlight(code.textContent, lang); }
+    });
+
+    // 术语联动：hover 相同 data-ref 的元素
+    var refs = document.querySelectorAll('[data-ref]');
+    var byRef = {};
+    refs.forEach(function (el) {
+      var key = el.getAttribute('data-ref');
+      (byRef[key] = byRef[key] || []).push(el);
+      if (el.classList.contains('term')) {
+        el.setAttribute('tabindex', '0');
+      }
+    });
+    Object.keys(byRef).forEach(function (key) {
+      var els = byRef[key];
+      els.forEach(function (el) {
+        function on() { els.forEach(function (x) { x.classList.add('ref-on'); }); }
+        function off() { els.forEach(function (x) { x.classList.remove('ref-on'); }); }
+        el.addEventListener('mouseenter', on);
+        el.addEventListener('mouseleave', off);
+        el.addEventListener('focus', on);
+        el.addEventListener('blur', off);
+      });
+    });
+
+    // 页内导航
+    document.querySelectorAll('a[href^="#"]').forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        var id = link.getAttribute('href').slice(1);
+        var t = document.getElementById(id);
+        if (t) {
+          e.preventDefault();
+          t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          if (history.pushState) history.pushState(null, '', '#' + id);
+        }
+      });
+    });
+
+    // 复制代码
+    document.querySelectorAll('.copybtn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var text = btn.closest('.codeblock').querySelector('pre').innerText;
+        function done() { btn.textContent = '已复制'; btn.classList.add('copied'); setTimeout(function(){ btn.textContent = '复制'; btn.classList.remove('copied'); }, 1500); }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(function () { fb(); });
+        } else { fb(); }
+        function fb() {
+          try { var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(); } catch (e) {}
+        }
+      });
+    });
+
+    // 目录高亮 + 进度
+    var sections = Array.prototype.slice.call(document.querySelectorAll('section[id]'));
+    var navLinks = document.querySelectorAll('.toc a');
+    var pos = document.querySelector('.topbar .pos');
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) {
+            var id = en.target.id;
+            navLinks.forEach(function (a) { a.classList.toggle('active', a.getAttribute('href') === '#' + id); });
+            if (pos) {
+              var idx = sections.indexOf(en.target) + 1;
+              pos.textContent = (idx < 10 ? '0' + idx : idx) + ' / ' + sections.length;
+            }
+          }
+        });
+      }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+      sections.forEach(function (s) { io.observe(s); });
+    }
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
