@@ -1,14 +1,4 @@
----
-AIGC:
-    Label: "1"
-    ContentProducer: 001191110102MACQD9K64018705
-    ProduceID: 2979002137451884_0-drive/242817475769156066/LangChain与LangGraph学习文档.md
-    ReservedCode1: ""
-    ContentPropagator: 001191110102MACQD9K64028705
-    PropagateID: 2979002137451884#1795066419493
-    ReservedCode2: ""
----
-# LangChain 与 LangGraph 学习文档
+# Langchain&graph说明文档
 
 > 基于官方文档（docs.langchain.com）与 GitHub 组织 langchain-ai 的内容整理，面向学习与快速上手。
 > 整理时间：2026-11-19
